@@ -1,12 +1,11 @@
 <template>
-  <div class="flex items-center justify-center h-screen">
+  <div class="flex items-center justify-center h-screen bg-gray-500">
     <VerificationCodeInput />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import './assets/main.css'
 import VerificationCodeInput from './components/VerificationCodeInput.vue';
 
 export default defineComponent({
