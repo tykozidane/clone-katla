@@ -147,6 +147,7 @@ export default {
   
 }
 .front, .back {
+  border-radius: 5px;
   width: 80px;
   height: 80px;
   display: flex;
@@ -154,8 +155,8 @@ export default {
   align-items: center;
   position: absolute;
   backface-visibility: hidden;
-  border: 1px solid #000;
-  border-color: white;
+  border: 1px solid #242c3c;
+  /* border-color: white; */
   font-size: 2.5rem;
   transition: transform 2s, border 0s;
 }
