@@ -1,21 +1,25 @@
 <template>
-  <div class="flex items-center justify-center h-screen bg-gray-500">
-    <VerificationCodeInput />
+  <div id="app">
+    <AnimatedBoxes />
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import VerificationCodeInput from './components/VerificationCodeInput.vue';
+<script>
+import AnimatedBoxes from './components/AnimatedBoxes.vue'
 
-export default defineComponent({
+export default {
   name: 'App',
   components: {
-    VerificationCodeInput,
-  },
-});
+    AnimatedBoxes
+  }
+}
 </script>
 
 <style>
-/* Tambahkan style global di sini jika diperlukan */
+/* Add any global styles here if needed */
+body {
+  background-color: #111827;
+  color: white;
+}
+
 </style>
