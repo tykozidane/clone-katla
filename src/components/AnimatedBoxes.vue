@@ -1,9 +1,10 @@
 <template>
-  <div class="flex flex-col justify-center items-center h-screen bg-gray-900 text-white">
-    <PopupMessage ref="popup" message="tidak ada di KBBI" />
+  <div class="flex flex-col justify-center items-center h-full bg-gray-900 text-white">
+    <HeaderComp />
+    <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
-    <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="flex">
-      <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex" class="m-1">
+    <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5" :style="{ gap: '4px', marginTop: '4px' }">
+      <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex">
         <div
           class="box"
           :class="{ flip: row.locked, shake: row.shake }"
@@ -14,7 +15,10 @@
         </div>
       </div>
     </div>
-    <KeyboardButtons @key-press="handleKeydown" />
+    <KeyboardButtons @key-press="handleKeydown" ref="keyboard" />
+    <div class="mt-2 text-xs">
+      Clone from <a class="font-bold">katla.id</a> by <a class="font-bold">Tyko Zidane Badhawi</a>
+    </div>
   </div>
 </template>
 
@@ -22,11 +26,13 @@
 import { words } from '../assets/data.json';
 import PopupMessage from './PopupMessage.vue';
 import KeyboardButtons from './KeyboardButtons.vue';
+import HeaderComp from './HeaderComp.vue';
 
 export default {
   components: {
     PopupMessage,
-    KeyboardButtons
+    KeyboardButtons,
+    HeaderComp
   },
   data() {
     return {
@@ -51,7 +57,7 @@ export default {
   methods: {
     handleKeydown(event) {
       const key = event.key || event;
-      
+
       if (this.gameOver) return;
 
       if (this.currentRow >= this.rows.length) {
@@ -67,21 +73,23 @@ export default {
             this.$refs.popup.show();
             return;
           }
-          if (this.checkWord()) {
-          currentRow.locked = true;
-            this.gameOver = true;
-            this.$refs.finishedPopup.show();
-            return;
-          }
-          currentRow.locked = true;
-          this.currentRow++;
-          this.currentInputIndex = 0;
+          currentRow.locked = true; // Lock the row before checking the word
+          setTimeout(() => { // Check the word after the flip animation
+            if (this.checkWord()) {
+              this.gameOver = true;
+              this.$refs.finishedPopup.show();
+              return;
+            }
+            this.currentRow++;
+            this.currentInputIndex = 0;
+          }, 500); // Match this with the flip animation duration
         }
       } else if (/^[a-zA-Z]$/.test(key)) {
         if (this.currentInputIndex < 5 && !currentRow.locked) {
           currentRow.boxes[this.currentInputIndex].letter = key.toLowerCase();
           currentRow.boxes[this.currentInputIndex].active = true;
           this.currentInputIndex++;
+          // this.$refs.keyboard.updateKeyStatus(key.toLowerCase(), 'pressed');
         }
       } else if (key === 'Backspace') {
         if (this.currentInputIndex > 0 && !currentRow.locked) {
@@ -108,6 +116,7 @@ export default {
         if (box.letter === this.wordOfTheDay[index]) {
           box.color = 'correct';
           letterMatch[index] = null; // Remove matched letter
+          this.$refs.keyboard.updateKeyStatus(box.letter, 'correct');
         } else {
           isExactMatch = false;
         }
@@ -118,11 +127,20 @@ export default {
         if (box.color !== 'correct') {
           if (letterMatch.includes(box.letter)) {
             box.color = 'present';
-            letterMatch[letterMatch.indexOf(box.letter)] = null; // Remove matched letter
+            letterMatch[letterMatch.indexOf(box.letter)] = null;
+            this.$refs.keyboard.updateKeyStatus(box.letter, 'present');
           } else {
             box.color = 'absent';
+            this.$refs.keyboard.updateKeyStatus(box.letter, 'absent');
           }
         }
+      });
+
+      // Flip the boxes after marking
+      currentRow.boxes.forEach((box, boxIndex) => {
+        setTimeout(() => {
+          box.active = false;
+        }, boxIndex * 500);
       });
 
       return isExactMatch;
@@ -141,31 +159,33 @@ export default {
 <style scoped>
 .box {
   perspective: 1000px;
-  text-transform: uppercase;
-  font-weight: 500;
-  /* background-color: #111827; */
-  
+  width: 89px;
+  height: 89px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 2s;
 }
 .front, .back {
-  border-radius: 5px;
-  width: 80px;
-  height: 80px;
+  width: 87px;
+  height: 87px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: absolute;
   backface-visibility: hidden;
-  border: 1px solid #242c3c;
-  /* border-color: white; */
+  border-radius: 3px;
   font-size: 2.5rem;
   transition: transform 2s, border 0s;
+  text-transform: uppercase;
 }
 .front {
-  background-color:#111827;
+  background-color: #111827;
+  border: 0.5px solid #242c3c;
 }
 .back {
   background-color: #374151;
   transform: rotateX(180deg);
+  border: none;
 }
 .back.correct {
   background-color: #15803d;
@@ -176,13 +196,7 @@ export default {
 .back.absent {
   background-color: #374151;
 }
-.box {
-  width: 80px;
-  height: 80px;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 2s;
-}
+
 .box.flip {
   animation: flip 2s forwards;
 }
@@ -195,11 +209,11 @@ export default {
 }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-   10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-   20%, 40%, 60%, 80% { transform: translateX(10px); }
+  10%, 30%, 50%, 70%, 85% { transform: translateX(-10px); }
+  20%, 40%, 60%, 80% { transform: translateX(10px); }
 }
 .front.animate {
   transform: scale(1);
-  border: 4px solid #374151;
+  border: 0.5px solid #242c3c;
 }
 </style>

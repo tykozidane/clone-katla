@@ -32,7 +32,7 @@
   <style scoped>
   .popup {
     position: fixed;
-    top: 20px;
+    top: 20%;
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(0, 0, 0, 0.8);
