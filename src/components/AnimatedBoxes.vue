@@ -1,9 +1,12 @@
 <template>
-  <div class="flex flex-col justify-center items-center h-full bg-gray-900 text-white">
-    <HeaderComp />
+  <div class="flex flex-col justify-center items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
+    <HowToPlay ref="howtoplay" />
+    <HeaderComp @showHowToPlay="showHowToPlay" />
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
-    <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5" :style="{ gap: '4px', marginTop: '4px' }">
+    <div class=" mx-auto max-w-full relative">
+      
+      <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5" :style="{ gap: '4px', marginTop: '4px' }">
       <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex">
         <div
           class="box"
@@ -15,6 +18,8 @@
         </div>
       </div>
     </div>
+    </div>
+    
     <KeyboardButtons @key-press="handleKeydown" ref="keyboard" />
     <div class="mt-2 text-xs">
       Clone from <a class="font-bold">katla.id</a> by <a class="font-bold">Tyko Zidane Badhawi</a>
@@ -27,12 +32,14 @@ import { words } from '../assets/data.json';
 import PopupMessage from './PopupMessage.vue';
 import KeyboardButtons from './KeyboardButtons.vue';
 import HeaderComp from './HeaderComp.vue';
+import HowToPlay from './HowToPlay.vue';
 
 export default {
   components: {
     PopupMessage,
     KeyboardButtons,
-    HeaderComp
+    HeaderComp,
+    HowToPlay
   },
   data() {
     return {
@@ -151,6 +158,9 @@ export default {
       setTimeout(() => {
         currentRow.shake = false;
       }, 600); // Shake duration should match the animation duration
+    },
+    showHowToPlay() {
+      this.$refs.howtoplay.show();
     }
   }
 }

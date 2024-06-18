@@ -1,5 +1,5 @@
 <template>
-  <div class="keyboard">
+  <div class="keyboard mx-auto">
     <div class="keyboard-row">
       <div class="flex">
         <button 

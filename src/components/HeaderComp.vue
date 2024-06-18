@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-[63px] w-[480px] pb-2 m-1">
+  <div class="flex flex-col h-[63px] w-[480px] pb-2 mx-auto">
     <div class="flex justify-between items-center w-full mb-1">
       <!-- <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l7.5 7.5m0 0l7.5-7.5m-7.5 7.5V3" />
@@ -7,7 +7,7 @@
     <div class="pt-2">
        <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
- preserveAspectRatio="xMidYMid meet" class="h-5 w-5">
+ preserveAspectRatio="xMidYMid meet" class="h-5 w-5" @click="showHowToPlay">
 
 <g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
 fill="#6b7280" stroke="none">
@@ -88,7 +88,12 @@ fill="#6b7280" stroke="none">
 
 <script>
 export default {
-  name: 'HeaderComp'
+  name: 'HeaderComp',
+  methods: {
+    showHowToPlay(){
+      this.$emit('showHowToPlay');
+    }
+  }
 }
 </script>
 
