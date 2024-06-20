@@ -74,13 +74,15 @@ export default {
     }
   },
   mounted() {
-    this.getDataKata();
+    this.getDataKata().then((item) => {
+    console.log("word", this.wordOfTheDay)
     window.addEventListener('keydown', this.handleKeydown);
     if(localStorage.getItem("katla:invalidWords").length > 0){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
     if(localStorage.getItem("katla:gameState").length > 0){
       this.gameState = JSON.parse(localStorage.getItem("katla:gameState"))
       this.insertLocalStorage();
     }
+    }); 
   },
   beforeUnmount() {
     // if(localStorage.getItem("katla:invalidWords")){this.invalidWords = localStorage.getItem("katla:invalidWords")}
@@ -89,7 +91,10 @@ export default {
   methods: {
     insertLocalStorage() {
       for(let i=0; i<this.gameState.attempt; i++){
-        this.firstCheckWord(i)
+        if (this.firstCheckWord(i)) {
+              this.gameOver = true;
+              return;
+            }
         this.currentRow++;
         console.log(this.rows[i])
       }
@@ -98,13 +103,14 @@ export default {
       const currentRow = this.rows[attempt];
       const wordArray = this.wordOfTheDay.split('');
       let isExactMatch = true;
-
+      currentRow.locked = true
       // Create a copy to keep track of letters already matched
       const letterMatch = wordArray.slice();
-      const letterLocalStorage = this.gameState.answer[attempt].slice();
+      const letterLocalStorage = this.gameState.answer[attempt];
 
       // First pass to find exact matches
       currentRow.boxes.forEach((box, index) => {
+        console.log(letterLocalStorage[index] + " = " + this.wordOfTheDay[index] )
         if (letterLocalStorage[index] === this.wordOfTheDay[index]) {
           box.color = 'correct';
           box.letter =letterLocalStorage[index];
@@ -133,7 +139,9 @@ export default {
 
       // Flip the boxes after marking
       currentRow.boxes.forEach((box, boxIndex) => {
+        setTimeout(() => {
           box.active = false;
+        }, boxIndex * 500);
       });
 
       return isExactMatch;
