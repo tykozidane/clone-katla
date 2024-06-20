@@ -1,27 +1,26 @@
 <template>
-  <div class="flex flex-col justify-center items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
+  <div class="flex flex-col justify-start items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
     <HowToPlay ref="howtoplay" />
-    <HeaderComp @showHowToPlay="showHowToPlay" />
+    <HeaderComp @showHowToPlay="showHowToPlay" :numberOfDays="numberOfDays"/>
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
-    <div class=" mx-auto max-w-full relative">
-      
-      <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5" :style="{ gap: '4px', marginTop: '4px' }">
-      <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex">
+    <div class=" mx-auto max-w-lg grow-0 shrink grid grid-rows-6 gap-[6px] w-full aspect-[5/6] mt-3 my-2 px-2 mini:px-8" >    
+      <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5 gap-[6px]">
+      <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex" class="w-full h-full">
         <div
-          class="box"
+          class="box w-full h-full font-bold mini:text-4xl text-2xl"
           :class="{ flip: row.locked, shake: row.shake }"
           :style="{ animationDelay: row.locked ? `${boxIndex * 0.5}s` : '0s' }"
         >
-          <div class="front" :class="{ animate: box.active }">{{ box.letter }}</div>
-          <div class="back" :class="box.color">{{ box.letter }}</div>
+          <div class="front w-full h-full" :class="{ animate: box.active }">{{ box.letter }}</div>
+          <div class="back w-full h-full" :class="box.color">{{ box.letter }}</div>
         </div>
       </div>
     </div>
     </div>
     
     <KeyboardButtons @key-press="handleKeydown" ref="keyboard" />
-    <div class="mt-2 text-xs">
+    <div class="mt-4 text-xs mb-5">
       Clone from <a class="font-bold">katla.id</a> by <a class="font-bold">Tyko Zidane Badhawi</a>
     </div>
   </div>
@@ -33,6 +32,13 @@ import PopupMessage from './PopupMessage.vue';
 import KeyboardButtons from './KeyboardButtons.vue';
 import HeaderComp from './HeaderComp.vue';
 import HowToPlay from './HowToPlay.vue';
+import firebaseConfig from '../../firebase.config.json';
+import { initializeApp } from 'firebase/app';
+import { collection, where, getFirestore, getDocs, doc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { query } from 'firebase/database';
+
+const fire = initializeApp(firebaseConfig);
+var db = getFirestore(fire)
 
 export default {
   components: {
@@ -43,7 +49,9 @@ export default {
   },
   data() {
     return {
-      wordOfTheDay: 'cinta',
+      wordOfTheDay: '',
+      numberOfDays: 0,
+      invalidWords: [],
       rows: Array(6).fill().map(() => ({
         boxes: Array(5).fill().map(() => ({ letter: '', active: false, color: '' })),
         locked: false,
@@ -52,16 +60,138 @@ export default {
       currentRow: 0,
       currentInputIndex: 0,
       gameOver: false,
-      greetingMessage: 'Congratulations! You guessed the word!'
+      greetingMessage: 'Congratulations! You guessed the word!',
+      gameState : {
+        answer: ["", "", "", "", "", ""],
+        attempt: 0,
+        enableFreeEdit: false,
+        enableHardMode: false,
+        enableHighContrast: false,
+        enableLiarMode: false,
+        lastCompletedDate: 0,
+        LieBoxes: []
+      }
     }
   },
   mounted() {
+    this.getDataKata();
     window.addEventListener('keydown', this.handleKeydown);
+    if(localStorage.getItem("katla:invalidWords").length > 0){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
+    if(localStorage.getItem("katla:gameState").length > 0){
+      this.gameState = JSON.parse(localStorage.getItem("katla:gameState"))
+      this.insertLocalStorage();
+    }
   },
   beforeUnmount() {
+    // if(localStorage.getItem("katla:invalidWords")){this.invalidWords = localStorage.getItem("katla:invalidWords")}
     window.removeEventListener('keydown', this.handleKeydown);
   },
   methods: {
+    insertLocalStorage() {
+      for(let i=0; i<this.gameState.attempt; i++){
+        this.firstCheckWord(i)
+        this.currentRow++;
+        console.log(this.rows[i])
+      }
+    },
+    firstCheckWord(attempt) {
+      const currentRow = this.rows[attempt];
+      const wordArray = this.wordOfTheDay.split('');
+      let isExactMatch = true;
+
+      // Create a copy to keep track of letters already matched
+      const letterMatch = wordArray.slice();
+      const letterLocalStorage = this.gameState.answer[attempt].slice();
+
+      // First pass to find exact matches
+      currentRow.boxes.forEach((box, index) => {
+        if (letterLocalStorage[index] === this.wordOfTheDay[index]) {
+          box.color = 'correct';
+          box.letter =letterLocalStorage[index];
+          letterMatch[index] = null; // Remove matched letter
+          this.$refs.keyboard.updateKeyStatus(letterLocalStorage[index], 'correct');
+        } else {
+          isExactMatch = false;
+        }
+      });
+
+      // Second pass to find correct letters in wrong positions
+      currentRow.boxes.forEach((box, index) => {
+        if (box.color !== 'correct') {
+          if (letterMatch.includes(letterLocalStorage[index])) {
+            box.color = 'present';
+            box.letter =letterLocalStorage[index];
+            letterMatch[letterMatch.indexOf(box.letter)] = null;
+            this.$refs.keyboard.updateKeyStatus(letterLocalStorage[index], 'present');
+          } else {
+            box.color = 'absent';
+            box.letter =letterLocalStorage[index];
+            this.$refs.keyboard.updateKeyStatus(letterLocalStorage[index], 'absent');
+          }
+        }
+      });
+
+      // Flip the boxes after marking
+      currentRow.boxes.forEach((box, boxIndex) => {
+          box.active = false;
+      });
+
+      return isExactMatch;
+    },
+    async getDataKata() {  
+      const timestamp =(new Date()).setHours(0,0,0,0)
+      console.log("try hit firebase", timestamp)
+      const q = query(collection(db, "katla"), where('date', '>=', Timestamp.fromDate(new Date(timestamp))));
+      const querySnapshot = await getDocs(q);
+      // console.log(querySnapshot)
+      // var successGet = false
+      const q2 = query(collection(db, "katla"));
+      const querySnapshot2 = await getDocs(q2);
+      this.numberOfDays = querySnapshot2.size
+      const dataKata = querySnapshot.docs.map((item)=>{return item.data()})
+      console.log("size", dataKata)
+      if(!dataKata){
+          this.generateNewWord();
+      } else {
+        this.wordOfTheDay = dataKata[0].word
+      }
+      // querySnapshot.forEach((doc) => {
+      //     // console.log(doc.data().date);
+      //     const newDate = new Date(doc.data().date.seconds*1000)
+      //     if(newDate >= timestamp){
+      //       // console.log("Lebih besar", newDate)
+      //       this.wordOfTheDay = doc.data().word
+      //       successGet = true
+      //     } 
+      //   });
+      //   if(!successGet){
+      //     // this.generateNewWord();
+      //   }
+    },  
+    async generateNewWord() {
+      var success = false
+      do {
+        var randomNumebr = Math.floor(Math.random()*words.length)
+        const newWord = words[randomNumebr];
+        const q = query(collection(db, "katla"), where('word', '==', newWord));
+        const querySnapshot = await getDocs(q);
+        if(querySnapshot.empty){
+          console.log("Tidak ada", newWord)
+          const timestamp =(new Date()).setHours(0,0,0,0)
+          await addDoc(collection(db, "katla"), {
+            date: Timestamp.fromDate(new Date(timestamp)), word: newWord
+          });
+          // console.log("Document written with ID: ", docRef.id);
+          // const katlaRef = collection(db, 'katla')
+          // await setDoc(doc(katlaRef, ''), {
+          //   date: timestamp, word: newWord
+          // })
+        } else {
+          console.log("ada", newWord)
+        }
+        success = true
+      } while (success == false)
+    },
     handleKeydown(event) {
       const key = event.key || event;
 
@@ -75,12 +205,21 @@ export default {
 
       if (key === 'Enter') {
         if (this.currentInputIndex === 5) {
+          const currentWord = this.rows[this.currentRow].boxes.map(box => box.letter).join('');
           if (!this.checkingKBBI()) {
+            
             this.shakeRow();
             this.$refs.popup.show();
+            // this.invalidWords.push("coba")
+            this.invalidWords.push(currentWord)
+            // localStorage.invalidWords = JSON.stringify(this.invalidWords)
+            localStorage.setItem("katla:invalidWords", JSON.stringify(this.invalidWords))
             return;
           }
           currentRow.locked = true; // Lock the row before checking the word
+          this.gameState.answer[this.gameState.attempt] = currentWord
+          this.gameState.attempt++;
+          localStorage.setItem("katla:gameState", JSON.stringify(this.gameState))
           setTimeout(() => { // Check the word after the flip animation
             if (this.checkWord()) {
               this.gameOver = true;
@@ -168,23 +307,23 @@ export default {
 
 <style scoped>
 .box {
-  perspective: 1000px;
+  /* perspective: 1000px;
   width: 89px;
-  height: 89px;
+  height: 89px; */
   position: relative;
   transform-style: preserve-3d;
   transition: transform 2s;
 }
 .front, .back {
-  width: 87px;
-  height: 87px;
+  /* width: 87px;
+  height: 87px; */
   display: flex;
   justify-content: center;
   align-items: center;
   position: absolute;
   backface-visibility: hidden;
   border-radius: 3px;
-  font-size: 2.5rem;
+  /* font-size: 2.5rem; */
   transition: transform 2s, border 0s;
   text-transform: uppercase;
 }

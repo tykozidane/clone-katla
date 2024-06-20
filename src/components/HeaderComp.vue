@@ -1,10 +1,11 @@
 <template>
-  <div class="flex flex-col h-[63px] w-[480px] pb-2 mx-auto">
-    <div class="flex justify-between items-center w-full mb-1">
+  <div class="flex justify-center items-center min-h-[63px] w-full max-w-[480px] pb-2 mx-auto relative">
+    <div class="absolute w-full h-full pt-5">
+      <div class="flex justify-between items-start w-full mb-1">
       <!-- <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l7.5 7.5m0 0l7.5-7.5m-7.5 7.5V3" />
     </svg> -->
-    <div class="pt-2">
+    <div class="pt-2 pb-2">
        <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
  preserveAspectRatio="xMidYMid meet" class="h-5 w-5" @click="showHowToPlay">
@@ -37,12 +38,9 @@ fill="#6b7280" stroke="none">
       </svg>
     </div>
    
-    <div class="flex justify-center items-center relative">
-      <div class="title"> <a class=" text-red-600">K</a>AT<a class=" text-lime-600">LA</a></div>
-      <div class=" font-bold absolute top-2 -right-10">#876</div>
-    </div>
+    
 
-    <div class="flex justify-center items-center pt-2">
+    <div class="flex justify-center items-center pb-2">
       <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
  preserveAspectRatio="xMidYMid meet" class="h-5 w-5">
@@ -81,13 +79,19 @@ fill="#6b7280" stroke="none">
         </svg>
     </div>
     </div>
-    <div class="line"></div>
+    <div class="line "></div>
+    </div>
+    <div class="flex justify-center items-center ">
+      <div class="title"> <a class=" text-red-600">K</a>AT<a class=" text-green">LA</a></div>
+      <div class=" font-bold self-start pt-2">#{{ numberOfDays }}</div>
+    </div>
   </div>
   
 </template>
 
 <script>
 export default {
+  props: ['numberOfDays'],
   name: 'HeaderComp',
   methods: {
     showHowToPlay(){
@@ -110,12 +114,15 @@ export default {
   margin-right: 8px;
 }
 .title {
-  font-size: 2.1rem;
+  font-size: 2.2rem;
   font-weight: 700;
   letter-spacing: 5px;
 }
 .line {
   /* border-color: #6b7280; */
   border-top: 1px solid #6b7280;
+}
+.text-green {
+  color: #009736;
 }
 </style>
