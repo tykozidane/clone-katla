@@ -1,7 +1,8 @@
 <template>
   <div class="flex flex-col justify-start items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
     <HowToPlay ref="howtoplay" />
-    <HeaderComp @showHowToPlay="showHowToPlay" :numberOfDays="numberOfDays"/>
+    <StatisticPopup ref="statisticPopup" :totalPlaying="totalPlaying" />
+    <HeaderComp @showHowToPlay="showHowToPlay" @showStatistic="showStatistic" :numberOfDays="numberOfDays"/>
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
     <div class=" mx-auto max-w-lg grow-0 shrink grid grid-rows-6 gap-[6px] w-full aspect-[5/6] mt-3 my-2 px-2 mini:px-8" >    
@@ -32,11 +33,11 @@ import PopupMessage from './PopupMessage.vue';
 import KeyboardButtons from './KeyboardButtons.vue';
 import HeaderComp from './HeaderComp.vue';
 import HowToPlay from './HowToPlay.vue';
+import StatisticPopup from './StatisticPopup.vue';
 import firebaseConfig from '../../firebase.config.json';
 import { initializeApp } from 'firebase/app';
 import { collection, where, getFirestore, getDocs, doc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { query } from 'firebase/database';
-
 const fire = initializeApp(firebaseConfig);
 var db = getFirestore(fire)
 
@@ -45,7 +46,8 @@ export default {
     PopupMessage,
     KeyboardButtons,
     HeaderComp,
-    HowToPlay
+    HowToPlay,
+    StatisticPopup
   },
   data() {
     return {
@@ -70,17 +72,38 @@ export default {
         enableLiarMode: false,
         lastCompletedDate: 0,
         LieBoxes: []
-      }
+      },
+      gameStats : {
+        currentStreak: 0,
+        distribution : {1:0, 2: 0, 3: 0, 4: 0, 5: 0, 6:0, fail:0},
+        maxstreak: 0
+      },
+      totalPlaying : 0,
     }
   },
   mounted() {
     this.getDataKata().then((item) => {
-    console.log("word", this.wordOfTheDay)
+    // console.log("word", this.wordOfTheDay);
+    // const meaning = KBBI.cari(this.wordOfTheDay);
+    // console.log("meaning", meaning)
+
     window.addEventListener('keydown', this.handleKeydown);
     if(localStorage.getItem("katla:invalidWords").length > 0){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
     if(localStorage.getItem("katla:gameState").length > 0){
+      const timestamp =(new Date()).setHours(0,0,0,0)
+      const tempGameState = JSON.parse(localStorage.getItem("katla:gameState"))
+      if(tempGameState.lastCompletedDate != timestamp){
+        localStorage.setItem("katla:invalidWords", JSON.stringify([]))
+        localStorage.setItem("katla:gameState", undefined)
+      } 
       this.gameState = JSON.parse(localStorage.getItem("katla:gameState"))
+      let tmpTotal = 0
+      this.gameStats.distribution.maps((item) => {return tmpTotal + item})
+      this.totalPlaying = tmpTotal
       this.insertLocalStorage();
+    }
+    if(localStorage.getItem("katla:gameStats").length > 0) {
+      this.gameStats = JSON.parse(localStorage.getItem("katla:gameStats"))
     }
     }); 
   },
@@ -141,7 +164,7 @@ export default {
       currentRow.boxes.forEach((box, boxIndex) => {
         setTimeout(() => {
           box.active = false;
-        }, boxIndex * 500);
+        }, boxIndex * 300);
       });
 
       return isExactMatch;
@@ -158,7 +181,7 @@ export default {
       this.numberOfDays = querySnapshot2.size
       const dataKata = querySnapshot.docs.map((item)=>{return item.data()})
       console.log("size", dataKata)
-      if(!dataKata){
+      if(dataKata.length < 1){
           this.generateNewWord();
       } else {
         this.wordOfTheDay = dataKata[0].word
@@ -227,14 +250,31 @@ export default {
           currentRow.locked = true; // Lock the row before checking the word
           this.gameState.answer[this.gameState.attempt] = currentWord
           this.gameState.attempt++;
+          const timestamp =(new Date()).setHours(0,0,0,0)
+          this.gameState.lastCompletedDate = timestamp
           localStorage.setItem("katla:gameState", JSON.stringify(this.gameState))
           setTimeout(() => { // Check the word after the flip animation
             if (this.checkWord()) {
               this.gameOver = true;
+              this.gameStats.distribution[this.currentRow]++
+              if(this.gameStats.maxstreak < this.gameStats.currentStreak){
+                this.gameStats.maxstreak = this.gameStats.currentStreak;
+              }
+              this.gameStats.currentStreak++
+          localStorage.setItem("katla:gameStats", JSON.stringify(this.gameStats))
+
               this.$refs.finishedPopup.show();
               return;
             }
             this.currentRow++;
+            if(this.currentRow == 6) {
+              if(this.gameStats.maxstreak < this.gameStats.currentStreak){
+                this.gameStats.maxstreak = this.gameStats.currentStreak;
+              }
+              this.gameStats.currentStreak = 0
+              this.gameStats.distribution["fail"]++
+              
+            }
             this.currentInputIndex = 0;
           }, 500); // Match this with the flip animation duration
         }
@@ -308,6 +348,9 @@ export default {
     },
     showHowToPlay() {
       this.$refs.howtoplay.show();
+    },
+    showStatistic() {
+      this.$refs.statisticPopup.show();
     }
   }
 }

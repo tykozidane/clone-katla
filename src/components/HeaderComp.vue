@@ -43,7 +43,7 @@ fill="#6b7280" stroke="none">
     <div class="flex justify-center items-center pb-2">
       <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
  width="512.000000pt" height="512.000000pt" viewBox="0 0 512.000000 512.000000"
- preserveAspectRatio="xMidYMid meet" class="h-5 w-5">
+ preserveAspectRatio="xMidYMid meet" class="h-5 w-5" @click="showStatistic" >
 
 <g transform="translate(0.000000,512.000000) scale(0.100000,-0.100000)"
 fill="#6b7280" stroke="none">
@@ -96,6 +96,9 @@ export default {
   methods: {
     showHowToPlay(){
       this.$emit('showHowToPlay');
+    },
+    showStatistic(){
+      this.$emit('showStatistic');
     }
   }
 }
