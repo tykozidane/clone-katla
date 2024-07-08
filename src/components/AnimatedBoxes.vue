@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col justify-start items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
     <HowToPlay ref="howtoplay" />
-    <StatisticPopup ref="statisticPopup" :totalPlaying="totalPlaying" />
+    <StatisticPopup ref="statisticPopup" :gameStats="gameStats" :highestValue="highestValue" :totalPlaying="totalPlaying" :persenWin="persenWin" :winStreak="winStreak" :winStreakNow="winStreakNow" />
     <HeaderComp @showHowToPlay="showHowToPlay" @showStatistic="showStatistic" :numberOfDays="numberOfDays"/>
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
@@ -79,6 +79,10 @@ export default {
         maxstreak: 0
       },
       totalPlaying : 0,
+      persenWin: 0,
+      winStreakNow: 0,
+      winStreak: 0,
+      highestValue: 0,
     }
   },
   mounted() {
@@ -97,13 +101,22 @@ export default {
         localStorage.setItem("katla:gameState", undefined)
       } 
       this.gameState = JSON.parse(localStorage.getItem("katla:gameState"))
-      let tmpTotal = 0
-      this.gameStats.distribution.maps((item) => {return tmpTotal + item})
-      this.totalPlaying = tmpTotal
+      
       this.insertLocalStorage();
     }
     if(localStorage.getItem("katla:gameStats").length > 0) {
       this.gameStats = JSON.parse(localStorage.getItem("katla:gameStats"))
+      for(let i=0;i<6;i++){
+        if(this.highestValue < this.gameStats.distribution[i+1]) {
+          this.highestValue = this.gameStats.distribution[i+1]
+        }
+        this.totalPlaying = this.totalPlaying + this.gameStats.distribution[i+1]
+      }
+      // this.totalPlaying = this.gameStats.distribution["1"] + this.gameStats.distribution["2"] +this.gameStats.distribution["3"] + this.gameStats.distribution["4"] + this.gameStats.distribution["5"] + this.gameStats.distribution["6"] + this.gameStats.distribution.fail
+      this.persenWin = (this.totalPlaying  - this.gameStats.distribution.fail) / this.totalPlaying *100
+      this.winStreak = this.gameStats.maxstreak
+      this.winStreakNow = this.gameStats.currentStreak
+      // console.log("Jalan")
     }
     }); 
   },
@@ -123,10 +136,10 @@ export default {
       }
     },
     firstCheckWord(attempt) {
-      const currentRow = this.rows[attempt];
+      let currentRow = this.rows[attempt]; 
       const wordArray = this.wordOfTheDay.split('');
       let isExactMatch = true;
-      currentRow.locked = true
+      currentRow.locked = true;
       // Create a copy to keep track of letters already matched
       const letterMatch = wordArray.slice();
       const letterLocalStorage = this.gameState.answer[attempt];
@@ -237,6 +250,8 @@ export default {
       if (key === 'Enter') {
         if (this.currentInputIndex === 5) {
           const currentWord = this.rows[this.currentRow].boxes.map(box => box.letter).join('');
+          const checkDoubleAnswer = this.gameState.answer.includes(currentWord)
+          if(checkDoubleAnswer) {return;}
           if (!this.checkingKBBI()) {
             
             this.shakeRow();
@@ -257,10 +272,11 @@ export default {
             if (this.checkWord()) {
               this.gameOver = true;
               this.gameStats.distribution[this.currentRow]++
+              this.gameStats.currentStreak++
               if(this.gameStats.maxstreak < this.gameStats.currentStreak){
                 this.gameStats.maxstreak = this.gameStats.currentStreak;
               }
-              this.gameStats.currentStreak++
+              
           localStorage.setItem("katla:gameStats", JSON.stringify(this.gameStats))
 
               this.$refs.finishedPopup.show();
