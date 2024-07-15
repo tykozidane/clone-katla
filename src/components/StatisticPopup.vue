@@ -36,47 +36,60 @@
           </div>
           <div class=" w-10/12 mx-auto flex flex-col mt-10 font-semibold">
             <div>DISTRIBUSI TEBAKAN</div>
-            <div class="flex flex-col mt-5 w-full">
-               <div class="flex">
-                  <div>1</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[0], ({'items-end' : center[0]})" > {{ gameStats.distribution[1] }} </div>
+            <div class="flex flex-col mt-5 w-full pb-10">
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center w-4">1</div>
+                  <div class="ml-1 bg-gray-500 flex  items-center font-semibold"  :style="{justifyContent: center[0] ? 'center': 'end', paddingRight: center[0] ? '0px' : '10px' , width: width[0]}" > {{ gameStats.distribution[1] }} </div>
                </div>
-               <div class="flex">
-                  <div>2</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[1], ({'items-end' : center[1]})" > {{ gameStats.distribution[2] }} </div>
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center  w-4">2</div>
+                  <div class="ml-1 bg-gray-500 flex  items-center  font-semibold"  :style="{justifyContent: center[1] ? 'center': 'end' , paddingRight: center[1] ? '0px' : '10px', width: width[1]}" > {{ gameStats.distribution[2] }} </div>
                </div>
-               <div class="flex">
-                  <div>3</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[2], ({'items-end' : center[2]})" > {{ gameStats.distribution[3] }} </div>
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center w-4">3</div>
+                  <div class="ml-1 bg-gray-500 flex  items-center  font-semibold" :style="{justifyContent: center[2] ? 'center': 'end' , paddingRight: center[2] ? '0px' : '10px' , width: width[2]}"> {{ gameStats.distribution[3] }} </div>
                </div>
-               <div class="flex">
-                  <div>4</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[3], ({'items-end' : center[3]})" > {{ gameStats.distribution[4] }} </div>
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center w-4">4</div>
+                  <div class="ml-1 bg-gray-500 flex  items-center  font-semibold" :style="{justifyContent: center[3] ? 'center': 'end' , paddingRight: center[3] ? '0px' : '10px' , width: width[3]}" > {{ gameStats.distribution[4] }} </div>
                </div>
-               <div class="flex">
-                  <div>5</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[4], ({'items-end' : center[4]})" > {{ gameStats.distribution[5] }} </div>
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center w-4">5</div>
+                  <div class="ml-1 bg-gray-500 flex  items-center  font-semibold" :style="{justifyContent: center[4] ? 'center': 'end' , paddingRight: center[4] ? '0px' : '10px' , width: width[4]}"> {{ gameStats.distribution[5] }} </div>
                </div>
-               <div class="flex">
-                  <div>6</div>
-                  <div class="ml-1 bg-slate-400 flex justify-center items-center" :class="width[5], ({'items-end' : center[5]})" > {{ gameStats.distribution[6] }} </div>
+               <div class="flex mb-1">
+                  <div class="flex justify-center items-center w-4">6</div>
+                  <div class="ml-1 bg-gray-500 flex items-center" :style="{justifyContent: center[5] ? 'center': 'end' , paddingRight: center[5] ? '0px' : '10px' , width: width[5]}" > {{ gameStats.distribution[6] }} </div>
                </div>
             </div>
           </div>
         </div>
       </div>
-        
     </div>
   </template>
   
   <script>
   export default {
     name:"StatisticPopup",
-    props: ["gameStats", "totalPlaying", "persenWin", "winStreak", "winStreakNow", "highestValue"],
+    props: ["gameStats", "totalPlaying", "persenWin", "winStreak", "winStreakNow", "highestValue", "finish"],
     data() {
+      // let arrWidth = []
+      // let arrCenter = []
+      // for(let i=0;i<6;i++){
+      //   if(this.gameStats.distribution[i+1] > 0){
+      //     // this.width[i] = 'w-[100%]'
+      //     let tempWidth = Math.round((this.gameStats.distribution[i+1] / this.highestValue * 100))
+      //     arrWidth[i]= ''+tempWidth+'%'
+      //     arrCenter[i] = false
+      //   } else {
+      //     arrWidth[i] = '10%'
+      //     arrCenter[i] = true
+      //   console.log("width " + i, this.gameStats.distribution[i+1])
+
+      //   }
+      // }
       return {
         visible: false,
-        number: 'w-['+70+'%]',
         width: [],
         center: []
       };
@@ -84,10 +97,12 @@
     mounted() {
       for(let i=0;i<6;i++){
         if(this.gameStats.distribution[i+1] > 0){
-          this.width[i]= 'w-['+(this.gameStats.distribution[i+1] / this.highestValue * 100)+'%]'
+          // this.width[i] = 'w-[100%]'
+          let tempWidth = Math.round((this.gameStats.distribution[i+1] / this.highestValue * 100))
+          this.width[i]= ''+tempWidth+'%'
           this.center[i] = false
         } else {
-          this.width[i] = 'w-[10%]'
+          this.width[i] = '10%'
           this.center[i] = true
         console.log("width " + i, this.gameStats.distribution[i+1])
 
@@ -95,7 +110,26 @@
         // if((this.gameStats.distribution[i+1] / this.highestValue * 100) < 10) {
         //   this.width[i] = 'w-[10%]'
         // }
-        console.log("width " + i, this.width[i])
+        console.log("center " + i, this.center[i])
+      }
+    },
+    updated(){
+      for(let i=0;i<6;i++){
+        if(this.gameStats.distribution[i+1] > 0){
+          // this.width[i] = 'w-[100%]'
+          let tempWidth = Math.round((this.gameStats.distribution[i+1] / this.highestValue * 100))
+          this.width[i]= ''+tempWidth+'%'
+          this.center[i] = false
+        } else {
+          this.width[i] = '10%'
+          this.center[i] = true
+        console.log("width " + i, this.gameStats.distribution[i+1])
+
+        }
+        // if((this.gameStats.distribution[i+1] / this.highestValue * 100) < 10) {
+        //   this.width[i] = 'w-[10%]'
+        // }
+        console.log("center " + i, this.center[i])
       }
     },
     methods: {

@@ -1,10 +1,10 @@
 <template>
   <div class="flex flex-col justify-start items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
     <HowToPlay ref="howtoplay" />
-    <StatisticPopup ref="statisticPopup" :gameStats="gameStats" :highestValue="highestValue" :totalPlaying="totalPlaying" :persenWin="persenWin" :winStreak="winStreak" :winStreakNow="winStreakNow" />
+    <StatisticPopup ref="statisticPopup" :gameStats="gameStats" :finish="finish" :highestValue="highestValue" :totalPlaying="totalPlaying" :persenWin="persenWin" :winStreak="winStreak" :winStreakNow="winStreakNow" />
     <HeaderComp @showHowToPlay="showHowToPlay" @showStatistic="showStatistic" :numberOfDays="numberOfDays"/>
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
-    <PopupMessage ref="finishedPopup" :message="greetingMessage" :showCloseButton="true" />
+    <PopupMessage ref="finishedPopup" :message="greetingMessage[numberGreeting]" :showCloseButton="false" />
     <div class=" mx-auto max-w-lg grow-0 shrink grid grid-rows-6 gap-[6px] w-full aspect-[5/6] mt-3 my-2 px-2 mini:px-8" >    
       <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5 gap-[6px]">
       <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex" class="w-full h-full">
@@ -38,6 +38,7 @@ import firebaseConfig from '../../firebase.config.json';
 import { initializeApp } from 'firebase/app';
 import { collection, where, getFirestore, getDocs, doc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { query } from 'firebase/database';
+import axios from 'axios'
 const fire = initializeApp(firebaseConfig);
 var db = getFirestore(fire)
 
@@ -62,7 +63,8 @@ export default {
       currentRow: 0,
       currentInputIndex: 0,
       gameOver: false,
-      greetingMessage: 'Congratulations! You guessed the word!',
+      greetingMessage: ['Smartest', 'Very Clever', 'Good Job', 'Nice Work','You Got It','Nice', 'Maybe Next Time'],
+      numberGreeting: 0,
       gameState : {
         answer: ["", "", "", "", "", ""],
         attempt: 0,
@@ -83,6 +85,7 @@ export default {
       winStreakNow: 0,
       winStreak: 0,
       highestValue: 0,
+      finish: false
     }
   },
   mounted() {
@@ -93,7 +96,12 @@ export default {
 
     window.addEventListener('keydown', this.handleKeydown);
     if(localStorage.getItem("katla:invalidWords").length > 0){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
-    if(localStorage.getItem("katla:gameState").length > 0){
+    if(localStorage.getItem("katla:gameStats").length > 0 && localStorage.getItem("katla:gameStats") != undefined) {
+      this.gameStats = JSON.parse(localStorage.getItem("katla:gameStats"))
+      this.countStatics();
+      // console.log("Jalan")
+    }
+    if(localStorage.getItem("katla:gameState").length > 0 && localStorage.getItem("katla:gameState") != undefined){
       const timestamp =(new Date()).setHours(0,0,0,0)
       const tempGameState = JSON.parse(localStorage.getItem("katla:gameState"))
       if(tempGameState.lastCompletedDate != timestamp){
@@ -104,20 +112,6 @@ export default {
       
       this.insertLocalStorage();
     }
-    if(localStorage.getItem("katla:gameStats").length > 0) {
-      this.gameStats = JSON.parse(localStorage.getItem("katla:gameStats"))
-      for(let i=0;i<6;i++){
-        if(this.highestValue < this.gameStats.distribution[i+1]) {
-          this.highestValue = this.gameStats.distribution[i+1]
-        }
-        this.totalPlaying = this.totalPlaying + this.gameStats.distribution[i+1]
-      }
-      // this.totalPlaying = this.gameStats.distribution["1"] + this.gameStats.distribution["2"] +this.gameStats.distribution["3"] + this.gameStats.distribution["4"] + this.gameStats.distribution["5"] + this.gameStats.distribution["6"] + this.gameStats.distribution.fail
-      this.persenWin = (this.totalPlaying  - this.gameStats.distribution.fail) / this.totalPlaying *100
-      this.winStreak = this.gameStats.maxstreak
-      this.winStreakNow = this.gameStats.currentStreak
-      // console.log("Jalan")
-    }
     }); 
   },
   beforeUnmount() {
@@ -125,6 +119,21 @@ export default {
     window.removeEventListener('keydown', this.handleKeydown);
   },
   methods: {
+    countStatics() {
+      this.totalPlaying = 0
+      for(let i=0;i<6;i++){
+        if(this.highestValue < this.gameStats.distribution[i+1]) {
+          this.highestValue = this.gameStats.distribution[i+1]
+        }
+        this.totalPlaying = this.totalPlaying + this.gameStats.distribution[i+1]
+      }
+      this.totalPlaying = this.totalPlaying + parseInt(this.gameStats.distribution.fail) 
+      // this.totalPlaying = this.gameStats.distribution["1"] + this.gameStats.distribution["2"] +this.gameStats.distribution["3"] + this.gameStats.distribution["4"] + this.gameStats.distribution["5"] + this.gameStats.distribution["6"] + parseInt(this.gameStats.distribution.fail)
+      this.persenWin = Math.round((this.totalPlaying  - this.gameStats.distribution.fail) / this.totalPlaying *100)
+      this.winStreak = this.gameStats.maxstreak
+      this.winStreakNow = this.gameStats.currentStreak
+      return
+    },
     insertLocalStorage() {
       for(let i=0; i<this.gameState.attempt; i++){
         if (this.firstCheckWord(i)) {
@@ -195,7 +204,9 @@ export default {
       const dataKata = querySnapshot.docs.map((item)=>{return item.data()})
       console.log("size", dataKata)
       if(dataKata.length < 1){
-          this.generateNewWord();
+         const newWord= this.generateNewWord();
+        this.wordOfTheDay = newWord
+
       } else {
         this.wordOfTheDay = dataKata[0].word
       }
@@ -217,24 +228,26 @@ export default {
       do {
         var randomNumebr = Math.floor(Math.random()*words.length)
         const newWord = words[randomNumebr];
+        let arti = []
+        
         const q = query(collection(db, "katla"), where('word', '==', newWord));
         const querySnapshot = await getDocs(q);
         if(querySnapshot.empty){
-          console.log("Tidak ada", newWord)
-          const timestamp =(new Date()).setHours(0,0,0,0)
+          await axios.get(`https://kbbi-api-zhirrr.vercel.app/api/kbbi?text=${newWord}`).then((item)=> {
+          arti = item.data.arti
+          })
+          if(arti.length > 0) {
+            const timestamp =(new Date()).setHours(0,0,0,0)
           await addDoc(collection(db, "katla"), {
             date: Timestamp.fromDate(new Date(timestamp)), word: newWord
           });
-          // console.log("Document written with ID: ", docRef.id);
-          // const katlaRef = collection(db, 'katla')
-          // await setDoc(doc(katlaRef, ''), {
-          //   date: timestamp, word: newWord
-          // })
-        } else {
-          console.log("ada", newWord)
-        }
-        success = true
+          success = true
+          }
+          
+        } 
+        
       } while (success == false)
+      return newWord
     },
     handleKeydown(event) {
       const key = event.key || event;
@@ -271,15 +284,20 @@ export default {
           setTimeout(() => { // Check the word after the flip animation
             if (this.checkWord()) {
               this.gameOver = true;
-              this.gameStats.distribution[this.currentRow]++
-              this.gameStats.currentStreak++
+              this.gameStats.distribution[this.currentRow+1] = this.gameStats.distribution[this.currentRow+1] + 1
+              this.gameStats.currentStreak = this.gameStats.currentStreak + 1
               if(this.gameStats.maxstreak < this.gameStats.currentStreak){
                 this.gameStats.maxstreak = this.gameStats.currentStreak;
               }
               
           localStorage.setItem("katla:gameStats", JSON.stringify(this.gameStats))
-
+              this.countStatics();
+              this.numberGreeting = this.currentRow
               this.$refs.finishedPopup.show();
+              this.finish = true
+              setTimeout(()=> {
+              this.$refs.statisticPopup.show();
+            }, 5000);
               return;
             }
             this.currentRow++;
@@ -288,9 +306,18 @@ export default {
                 this.gameStats.maxstreak = this.gameStats.currentStreak;
               }
               this.gameStats.currentStreak = 0
-              this.gameStats.distribution["fail"]++
-              
-            }
+              this.gameStats.distribution.fail = this.gameStats.distribution.fail + 1
+              console.log("fail", this.gameStats.distribution.fail)
+              localStorage.setItem("katla:gameStats", JSON.stringify(this.gameStats))
+              this.countStatics();
+              this.numberGreeting = 6;
+              this.$refs.finishedPopup.show();
+              this.finish = true
+              setTimeout(()=> {
+              this.$refs.statisticPopup.show();
+              }, 5000);
+            }                                     
+            
             this.currentInputIndex = 0;
           }, 500); // Match this with the flip animation duration
         }
