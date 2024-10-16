@@ -1,15 +1,15 @@
 <template>
-  <div class="flex flex-col justify-start items-center h-screen bg-gray-900 text-white relative overflow-hidden">  
+  <div class="flex flex-col base justify-start items-center h-screen bg-gray-900 text-white px-3 md:pb-5 lg:px-0 lg:pb-0 relative overflow-hidden overflow-y-hidden">  
     <HowToPlay ref="howtoplay" />
     <StatisticPopup ref="statisticPopup" :gameStats="gameStats" :finish="finish" :highestValue="highestValue" :totalPlaying="totalPlaying" :persenWin="persenWin" :winStreak="winStreak" :winStreakNow="winStreakNow" />
     <HeaderComp @showHowToPlay="showHowToPlay" @showStatistic="showStatistic" :numberOfDays="numberOfDays"/>
     <PopupMessage ref="popup" message="Tidak ada di KBBI" />
     <PopupMessage ref="finishedPopup" :message="greetingMessage[numberGreeting]" :showCloseButton="false" />
-    <div class=" mx-auto max-w-lg grow-0 shrink grid grid-rows-6 gap-[6px] w-full aspect-[5/6] mt-3 my-2 px-2 mini:px-8" >    
+    <div class="outerbox mx-auto grow-0 shrink grid grid-rows-6 gap-[6px] w-full max-h-[400px] h-full md:h-4/5 md:max-h-full mt-3 my-2 px-2 mini:px-8" >    
       <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="grid grid-cols-5 gap-[6px]">
       <div v-for="(box, boxIndex) in row.boxes" :key="boxIndex" class="w-full h-full">
         <div
-          class="box w-full h-full font-bold mini:text-4xl text-2xl"
+          class="box w-full h-full font-bold mini:text-4xl text-3xl"
           :class="{ flip: row.locked, shake: row.shake }"
           :style="{ animationDelay: row.locked ? `${boxIndex * 0.5}s` : '0s' }"
         >
@@ -34,13 +34,7 @@ import KeyboardButtons from './KeyboardButtons.vue';
 import HeaderComp from './HeaderComp.vue';
 import HowToPlay from './HowToPlay.vue';
 import StatisticPopup from './StatisticPopup.vue';
-import firebaseConfig from '../../firebase.config.json';
-import { initializeApp } from 'firebase/app';
-import { collection, where, getFirestore, getDocs, doc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
-import { query } from 'firebase/database';
 import axios from 'axios'
-const fire = initializeApp(firebaseConfig);
-var db = getFirestore(fire)
 
 export default {
   components: {
@@ -95,15 +89,16 @@ export default {
     // console.log("meaning", meaning)
 
     window.addEventListener('keydown', this.handleKeydown);
-    if(localStorage.getItem("katla:invalidWords").length > 0){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
-    if(localStorage.getItem("katla:gameStats").length > 0 && localStorage.getItem("katla:gameStats") != undefined) {
+    if(localStorage.getItem("katla:invalidWords") != undefined ){this.invalidWords = JSON.parse(localStorage.getItem("katla:invalidWords"))}
+    if( localStorage.getItem("katla:gameStats") != undefined) {
       this.gameStats = JSON.parse(localStorage.getItem("katla:gameStats"))
       this.countStatics();
       // console.log("Jalan")
     }
-    if(localStorage.getItem("katla:gameState").length > 0 && localStorage.getItem("katla:gameState") != undefined){
+    if( localStorage.getItem("katla:gameState") != undefined){
       const timestamp =(new Date()).setHours(0,0,0,0)
       const tempGameState = JSON.parse(localStorage.getItem("katla:gameState"))
+      // console.log("Check Date " + timestamp + " dan game state " + tempGameState.lastCompletedDate)
       if(tempGameState.lastCompletedDate != timestamp){
         localStorage.setItem("katla:invalidWords", JSON.stringify([]))
         localStorage.setItem("katla:gameState", undefined)
@@ -146,6 +141,7 @@ export default {
     },
     firstCheckWord(attempt) {
       let currentRow = this.rows[attempt]; 
+      // console.log("checkWord", this.wordOfTheDay)
       const wordArray = this.wordOfTheDay.split('');
       let isExactMatch = true;
       currentRow.locked = true;
@@ -155,7 +151,7 @@ export default {
 
       // First pass to find exact matches
       currentRow.boxes.forEach((box, index) => {
-        console.log(letterLocalStorage[index] + " = " + this.wordOfTheDay[index] )
+        // console.log(letterLocalStorage[index] + " = " + this.wordOfTheDay[index] )
         if (letterLocalStorage[index] === this.wordOfTheDay[index]) {
           box.color = 'correct';
           box.letter =letterLocalStorage[index];
@@ -193,65 +189,20 @@ export default {
     },
     async getDataKata() {  
       const timestamp =(new Date()).setHours(0,0,0,0)
-      console.log("try hit firebase", timestamp)
-      const q = query(collection(db, "katla"), where('date', '>=', Timestamp.fromDate(new Date(timestamp))));
-      const querySnapshot = await getDocs(q);
-      // console.log(querySnapshot)
-      // var successGet = false
-      const q2 = query(collection(db, "katla"));
-      const querySnapshot2 = await getDocs(q2);
-      this.numberOfDays = querySnapshot2.size
-      const dataKata = querySnapshot.docs.map((item)=>{return item.data()})
-      console.log("size", dataKata)
-      if(dataKata.length < 1){
-         const newWord= this.generateNewWord();
-        this.wordOfTheDay = newWord
-
-      } else {
-        this.wordOfTheDay = dataKata[0].word
-      }
-      // querySnapshot.forEach((doc) => {
-      //     // console.log(doc.data().date);
-      //     const newDate = new Date(doc.data().date.seconds*1000)
-      //     if(newDate >= timestamp){
-      //       // console.log("Lebih besar", newDate)
-      //       this.wordOfTheDay = doc.data().word
-      //       successGet = true
-      //     } 
-      //   });
-      //   if(!successGet){
-      //     // this.generateNewWord();
-      //   }
+      // console.log("try hit ", timestamp)
+      const axiosWord = await axios.get(`https://tykozidane.com/api/katla/today`)
+      // console.log("after hit", axiosWord.data.code)
+        if (axiosWord.data.code != "00") {
+          return new Error('Failed to fetch word of the day');
+        }
+        // const data = await axiosWord.data.json();
+        this.wordOfTheDay = axiosWord.data.data.dataWord.word;
+        this.numberOfDays = axiosWord.data.data.count
+        return axiosWord.data.data.dataWord.word;
     },  
-    async generateNewWord() {
-      var success = false
-      do {
-        var randomNumebr = Math.floor(Math.random()*words.length)
-        const newWord = words[randomNumebr];
-        let arti = []
-        
-        const q = query(collection(db, "katla"), where('word', '==', newWord));
-        const querySnapshot = await getDocs(q);
-        if(querySnapshot.empty){
-          await axios.get(`https://kbbi-api-zhirrr.vercel.app/api/kbbi?text=${newWord}`).then((item)=> {
-          arti = item.data.arti
-          })
-          if(arti.length > 0) {
-            const timestamp =(new Date()).setHours(0,0,0,0)
-          await addDoc(collection(db, "katla"), {
-            date: Timestamp.fromDate(new Date(timestamp)), word: newWord
-          });
-          success = true
-          }
-          
-        } 
-        
-      } while (success == false)
-      return newWord
-    },
     handleKeydown(event) {
       const key = event.key || event;
-
+      // console.log("handelKey",event)
       if (this.gameOver) return;
 
       if (this.currentRow >= this.rows.length) {
@@ -400,6 +351,52 @@ export default {
 </script>
 
 <style scoped>
+.base::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.base {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+@media screen and ( min-width: 768px ) and ( min-height: 1024px ) {
+ .base{
+  padding-left: 40px;
+  padding-right: 40px;
+ } 
+ .outerbox {
+  max-width:none;
+  max-height: 912px;
+ }
+}
+@media screen and ( max-width: 1024px ) and ( max-height: 1023px ) {
+ .base{
+  padding-left: auto;
+  padding-right: auto;
+ } 
+ .outerbox {
+  max-width:28rem;
+ }
+}
+@media screen and (min-aspect-ratio: 5/5) {
+ .base{
+  padding-left: auto;
+  padding-right: auto;
+ } 
+ .outerbox {
+  max-width: 28rem;
+ }
+}
+/* @media (max-aspect-ratio: 5/5) {
+ .base{
+  padding-left: auto;
+  padding-right: auto;
+ } 
+ .outerbox {
+  max-width: 28rem;
+ }
+} */
 .box {
   /* perspective: 1000px;
   width: 89px;
@@ -423,7 +420,7 @@ export default {
 }
 .front {
   background-color: #111827;
-  border: 0.5px solid #242c3c;
+  border: 1px solid #41444b;
 }
 .back {
   background-color: #374151;

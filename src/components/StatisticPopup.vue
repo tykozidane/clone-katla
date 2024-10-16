@@ -104,13 +104,13 @@
         } else {
           this.width[i] = '10%'
           this.center[i] = true
-        console.log("width " + i, this.gameStats.distribution[i+1])
+        //console.log("width " + i, this.gameStats.distribution[i+1])
 
         }
         // if((this.gameStats.distribution[i+1] / this.highestValue * 100) < 10) {
         //   this.width[i] = 'w-[10%]'
         // }
-        console.log("center " + i, this.center[i])
+        //console.log("center " + i, this.center[i])
       }
     },
     updated(){
@@ -123,13 +123,13 @@
         } else {
           this.width[i] = '10%'
           this.center[i] = true
-        console.log("width " + i, this.gameStats.distribution[i+1])
+        //console.log("width " + i, this.gameStats.distribution[i+1])
 
         }
         // if((this.gameStats.distribution[i+1] / this.highestValue * 100) < 10) {
         //   this.width[i] = 'w-[10%]'
         // }
-        console.log("center " + i, this.center[i])
+        //console.log("center " + i, this.center[i])
       }
     },
     methods: {

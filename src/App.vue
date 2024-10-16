@@ -5,14 +5,17 @@
 </template>
 
 <script>
-import AnimatedBoxes from './components/AnimatedBoxes.vue'
+import AnimatedBoxes from "./components/AnimatedBoxes.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    AnimatedBoxes
-  }
-}
+    AnimatedBoxes,
+  },
+  mounted() {
+    document.title = "Clone Katla";
+  },
+};
 </script>
 
 <style>
@@ -49,5 +52,4 @@ body {
 .key-button:hover {
   background-color: #5a636e;
 } */
-
 </style>

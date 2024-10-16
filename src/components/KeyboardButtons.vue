@@ -1,6 +1,6 @@
 <template>
   <div class="keyboard mx-auto max-w-lg w-full space-y-3">
-    <div class="keyboard-row space-x-2 w-full">
+    <div class="keyboard-row space-x-2 w-full px-2">
         <button 
           v-for="key in keys[0]" 
           class="flex justify-center items-center rounded-md select-none w-full mini:max-w-[40px] min-h-[48px]"
@@ -12,7 +12,7 @@
           {{ key }}
         </button>
     </div>
-    <div class="keyboard-row space-x-2 w-full px-4">
+    <div class="keyboard-row space-x-2 w-full px-6">
         <button 
           v-for="key in keys[1]" 
           class="flex justify-center items-center rounded-md select-none w-full mini:max-w-[40px] min-h-[48px]"
@@ -24,11 +24,11 @@
           {{ key }}
         </button>
     </div>
-    <div class="keyboard-row space-x-2 w-full">
-      <button @click="handleKeyClick('Enter')" class="key-button special max-w-[60px] flex justify-center items-center rounded-md select-none">Enter</button>
+    <div class="keyboard-row space-x-2 w-full px-2">
+      <button @click="handleKeyClick('Enter')" class="key-button special px-1 max-w-[60px] flex justify-center items-center rounded-md select-none">Enter</button>
         <button 
           v-for="key in keys[2]" 
-          class="flex justify-center items-center rounded-md select-none w-full  mini:max-w-[40px] min-h-[48px]"
+          class="flex justify-center items-center rounded-md select-none w-full  mini:max-w-[40px] min-h-[48px]  md:text-base"
           
           :key="key" 
           @click="handleKeyClick(key)"
@@ -36,7 +36,7 @@
           :style="getKeyStyle(key)">
           {{ key }}
         </button>
-        <button @click="handleKeyClick('Backspace')" class="key-button special max-w-[60px] flex justify-center items-center rounded-md select-none">
+        <button @click="handleKeyClick('Backspace')" class="key-button special px-2 max-w-[60px] flex justify-center items-center rounded-md select-none">
         <!-- <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12l-6-6m0 0l-6 6m6-6v12" />
         </svg> -->
